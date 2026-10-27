@@ -1,7 +1,10 @@
 venv/
-__pycache__/
 output/
+uploads/
+__pycache__/
+*.pyc
 *.mp4
 *.mp3
-*.srt
+upstream_openshorts/dashboard/node_modules/
+upstream_openshorts/dashboard/dist/
 .env

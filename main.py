@@ -14,13 +14,18 @@ from fastapi.templating import Jinja2Templates
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "output"
 STATIC_DIR = BASE_DIR / "static"
+DASHBOARD_DIR = STATIC_DIR / "dashboard"
 OUTPUT_DIR.mkdir(exist_ok=True)
 STATIC_DIR.mkdir(exist_ok=True)
 
-app = FastAPI(title="TonShortGenerator", version="1.0.0")
+app = FastAPI(title="TonShortGenerator (Powered by OpenShorts Engine)", version="2.0.0")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+# Mount directories
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/output", StaticFiles(directory=str(OUTPUT_DIR)), name="output")
+if DASHBOARD_DIR.exists():
+    app.mount("/dashboard", StaticFiles(directory=str(DASHBOARD_DIR), html=True), name="dashboard")
 
 jobs = {}
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -109,7 +114,7 @@ def render_short_video(job_id: str, title: str, script: str, voice: str, bg_them
             "drawbox=x=76:y=316:w=928:h=1188:color=#FF0000@0.7:t=4",
             f"drawtext=fontfile='{FONT_BOLD}':text='TON SHORT GENERATOR':fontcolor=#FF3333:fontsize=28:x=(w-text_w)/2:y=360",
             f"subtitles={srt_path}:force_style='{sub_style}'",
-            f"drawtext=fontfile='{FONT_REG}':text='TonShortGenerator \\u2022 tonhermes.web.id':fontcolor=white@0.4:fontsize=22:x=(w-text_w)/2:y=1820"
+            f"drawtext=fontfile='{FONT_REG}':text='TonShortGenerator \\u2022 OpenShorts Engine':fontcolor=white@0.4:fontsize=22:x=(w-text_w)/2:y=1820"
         ]
         vf_string = ",".join(vf_filters)
 
@@ -140,6 +145,30 @@ def render_short_video(job_id: str, title: str, script: str, voice: str, bg_them
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
+
+# OpenShorts compatibility API routes
+@app.get("/health")
+@app.get("/health/ready")
+async def health_check():
+    return {"status": "ok", "app": "TonShortGenerator", "engine": "OpenShorts Core"}
+
+@app.get("/api/config")
+async def api_config():
+    return {
+        "gemini_configured": False,
+        "max_concurrent_jobs": 2,
+        "max_file_size_mb": 500,
+        "self_hosted": True,
+        "version": "2.0.0-mask"
+    }
+
+@app.get("/api/history")
+async def api_history():
+    return {"jobs": list(jobs.values())}
+
+@app.get("/api/social/user")
+async def api_social_user():
+    return {"connected": False, "channels": []}
 
 @app.post("/api/generate")
 async def start_generate(

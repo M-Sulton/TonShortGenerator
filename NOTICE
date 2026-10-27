@@ -1,0 +1,10 @@
+TonShortGenerator
+Copyright (c) 2026 Muhamad Sulton
+
+This project contains and builds upon the OpenShorts open-source architecture:
+Upstream Project: OpenShorts (https://github.com/mutonby/openshorts)
+Copyright (c) 2024 OpenShorts
+Licensed under the MIT License.
+
+All modifications, branding mask, and autonomous deployment layers are provided
+under identical MIT terms with full upstream attribution.
