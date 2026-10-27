@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TonShortGenerator - AI YouTube Shorts Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            yt: {
+              red: '#FF0000',
+              darkred: '#CC0000',
+              card: '#0f0f0f',
+              cardlight: '#ffffff',
+              border: '#272727',
+              borderlight: '#e5e5e5'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+    body { font-family: 'Roboto', sans-serif; }
+    .yt-glow {
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.35);
+    }
+    .yt-border-glow:focus-within {
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+      border-color: #FF0000;
+    }
+  </style>
+</head>
+<body class="bg-[#0f0f0f] text-gray-100 transition-colors duration-300 min-h-screen flex flex-col" id="body-app">
+
+  <!-- Top Navbar -->
+  <header class="sticky top-0 z-50 bg-[#0f0f0f]/90 dark:bg-[#0f0f0f]/90 backdrop-blur border-b border-[#272727] dark:border-[#272727] px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-yt-red flex items-center justify-center text-white text-xl shadow-lg shadow-red-600/30">
+        <i class="fa-brands fa-youtube"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-black tracking-tight flex items-center gap-2">
+          <span>TonShort</span><span class="text-yt-red">Generator</span>
+          <span class="text-[10px] uppercase font-bold tracking-widest bg-yt-red/20 text-yt-red px-2 py-0.5 rounded-full border border-yt-red/30">AI Pro</span>
+        </h1>
+        <p class="text-xs text-gray-400">Automated YouTube Shorts Studio</p>
+      </div>
+    </div>
+
+    <!-- Actions & Night Mode -->
+    <div class="flex items-center space-x-3">
+      <button id="themeToggle" class="p-2.5 rounded-xl border border-gray-700 hover:border-yt-red bg-zinc-900 text-gray-300 hover:text-white transition">
+        <i class="fa-solid fa-moon text-yellow-400" id="themeIcon"></i>
+      </button>
+      <a href="https://github.com/M-Sulton/TonShortGenerator" target="_blank" class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm font-semibold transition border border-zinc-700">
+        <i class="fa-brands fa-github"></i>
+        <span>GitHub</span>
+      </a>
+      <div class="px-3 py-1 bg-red-950/60 border border-red-800/80 rounded-full text-xs font-medium text-red-300 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+        <span>Online</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- Left Column: Generator Form -->
+    <section class="lg:col-span-7 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 sm:p-7 shadow-xl flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between pb-4 border-b border-zinc-800 mb-6">
+          <div class="flex items-center gap-2">
+            <span class="flex h-3 w-3 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-yt-red"></span>
+            </span>
+            <h2 class="text-lg font-bold text-white uppercase tracking-wider">Shorts Studio Studio Engine</h2>
+          </div>
+          <span class="text-xs text-zinc-400">Inspired by OpenShorts Architecture</span>
+        </div>
+
+        <form id="shortForm" class="space-y-5">
+          <!-- Video Title -->
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+              <i class="fa-solid fa-heading text-yt-red mr-1.5"></i> Judul Video Shorts
+            </label>
+            <input type="text" id="title" name="title" required placeholder="Contoh: 3 FAKTA UNIK DUNIA YANG JARANG DIKETAHUI"
+              class="w-full bg-zinc-950 border border-zinc-700 focus:border-yt-red rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition">
+          </div>
+
+          <!-- Niche / Script Content -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                <i class="fa-solid fa-align-left text-yt-red mr-1.5"></i> Naskah / Narasi Voiceover (30 Detik)
+              </label>
+              <button type="button" id="loadPresetBtn" class="text-xs text-yt-red hover:underline font-medium">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Isi Contoh Roblox / Fakta
+              </button>
+            </div>
+            <textarea id="script" name="script" rows="5" required placeholder="Tuliskan naskah berdurasi ~30 detik (sekitar 50-80 kata). Sistem otomatis mengubah suara AI dan menyusun subtitle vertikal dinamis..."
+              class="w-full bg-zinc-950 border border-zinc-700 focus:border-yt-red rounded-xl p-4 text-sm text-white focus:outline-none transition"></textarea>
+          </div>
+
+          <!-- Options Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Voice Actor -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+                <i class="fa-solid fa-microphone-lines text-yt-red mr-1.5"></i> Suara Voiceover AI
+              </label>
+              <select id="voice" name="voice" class="w-full bg-zinc-950 border border-zinc-700 focus:border-yt-red rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none">
+                <option value="id-ID-ArdiNeural">Ardi (Bahasa Indonesia - Pria Tegas)</option>
+                <option value="id-ID-GadisNeural">Gadis (Bahasa Indonesia - Wanita Ramah)</option>
+                <option value="en-US-GuyNeural">Guy (English - Energetic)</option>
+                <option value="en-US-JennyNeural">Jenny (English - Clear)</option>
+              </select>
+            </div>
+
+            <!-- Background Aesthetic -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+                <i class="fa-solid fa-palette text-yt-red mr-1.5"></i> Tema Warna Visual
+              </label>
+              <select id="theme" name="theme" class="w-full bg-zinc-950 border border-zinc-700 focus:border-yt-red rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none">
+                <option value="neon_red">YouTube Crimson Red (Signature)</option>
+                <option value="cyber_dark">Cyber Dark Gradient</option>
+                <option value="pure_black">Amoled Pure Black</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="submitBtn" class="w-full py-3.5 px-6 rounded-xl bg-yt-red hover:bg-yt-darkred text-white font-bold tracking-wide transition transform active:scale-[0.99] flex items-center justify-center gap-2 shadow-lg shadow-red-700/30">
+            <i class="fa-solid fa-film"></i>
+            <span id="btnText">GENERATE SHORTS SEKARANG</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="mt-6 pt-4 border-t border-zinc-800 text-xs text-zinc-500 flex flex-wrap items-center justify-between gap-2">
+        <span><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Render Cepat via FFmpeg & Microsoft Edge TTS</span>
+        <span>Rasio Aspek 9:16 (1080x1920)</span>
+      </div>
+    </section>
+
+    <!-- Right Column: Player & Queue Monitoring -->
+    <section class="lg:col-span-5 flex flex-col gap-6">
+      
+      <!-- Video Result Preview Card -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl flex flex-col items-center">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-zinc-300 mb-4 w-full flex items-center justify-between">
+          <span><i class="fa-solid fa-mobile-screen text-yt-red mr-2"></i> Preview Layar Vertikal (9:16)</span>
+          <span id="statusBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400">Siap</span>
+        </h3>
+
+        <!-- Phone Mockup Container -->
+        <div class="w-full max-w-[280px] aspect-[9/16] bg-black rounded-3xl border-4 border-zinc-800 relative overflow-hidden flex flex-col items-center justify-center shadow-2xl">
+          <div id="emptyPlaceholder" class="text-center p-6 text-zinc-500">
+            <i class="fa-brands fa-youtube text-5xl mb-3 text-zinc-700"></i>
+            <p class="text-xs">Hasil render video shorts 1080x1920 akan tampil di sini.</p>
+          </div>
+
+          <video id="videoPreview" class="w-full h-full object-cover hidden" controls autoplay playsinline loop></video>
+
+          <!-- Loading Overlay -->
+          <div id="loadingOverlay" class="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center hidden">
+            <div class="w-12 h-12 border-4 border-yt-red border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p id="loadingStatusText" class="text-sm font-semibold text-white">Memproses Suara & Subtitle...</p>
+            <div class="w-full bg-zinc-800 rounded-full h-2 mt-4 overflow-hidden">
+              <div id="progressBar" class="bg-yt-red h-full w-10 transition-all duration-300"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="downloadSection" class="w-full mt-4 hidden">
+          <a id="downloadBtn" href="#" download="TonShort.mp4" class="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-download text-yt-red"></i>
+            <span>Download Video MP4</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Feature Card Inspired by OpenShorts -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl text-xs space-y-3">
+        <h4 class="font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-layer-group text-yt-red"></i> Arsitektur OpenShorts Terpadu
+        </h4>
+        <p class="text-zinc-400 leading-relaxed">
+          Mengadopsi modular pipeline dari OpenShorts: layouting otomatis vertikal, sinkronisasi subtitle per frame, dan encoding efisien hemat CPU VPS tanpa beban GPU berat.
+        </p>
+        <div class="pt-2 border-t border-zinc-800 flex items-center justify-between text-zinc-500">
+          <span>Domain: <strong class="text-zinc-300">tonhermes.web.id</strong></span>
+          <span>Port Server: <strong class="text-zinc-300">3015</strong></span>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Copyright Footer -->
+  <footer class="bg-[#0a0a0a] border-t border-zinc-800 py-6 px-4 mt-auto">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-yt-red"></span>
+        <span>© 2025 - 2026 <strong>TonShortGenerator</strong>. Hak Cipta Dilindungi Undang-Undang.</span>
+      </div>
+      <div>
+        <span>Dikelola oleh <strong class="text-zinc-400">Muhamad Sulton</strong> &bull; Powered by TonHermes AI Cloud</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme toggle logic
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const bodyApp = document.getElementById('body-app');
+
+    themeToggle.addEventListener('click', () => {
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        bodyApp.classList.remove('bg-[#0f0f0f]', 'text-gray-100');
+        bodyApp.classList.add('bg-zinc-100', 'text-gray-900');
+        themeIcon.classList.remove('fa-moon', 'text-yellow-400');
+        themeIcon.classList.add('fa-sun', 'text-orange-500');
+      } else {
+        document.documentElement.classList.add('dark');
+        bodyApp.classList.add('bg-[#0f0f0f]', 'text-gray-100');
+        bodyApp.classList.remove('bg-zinc-100', 'text-gray-900');
+        themeIcon.classList.remove('fa-sun', 'text-orange-500');
+        themeIcon.classList.add('fa-moon', 'text-yellow-400');
+      }
+    });
+
+    // Preset generator helper
+    const presets = [
+      {
+        title: "3 MISTERI ROBLOX PALING MENGERIKAN",
+        script: "Tahukah kamu di dunia Roblox ada misteri yang belum terpecahkan? Pertama, legenda John Doe yang konon muncul di server sepi. Kedua, pesan rahasia di game klasik yang bikin merinding. Dan ketiga, ruangan tersembunyi yang hilang selamanya! Kamu berani mencarinya?"
+      },
+      {
+        title: "FAKTA MENGEJUTKAN TENTANG LUAR ANGKASA",
+        script: "Luar angkasa menyimpan fakta tak terduga! Satu hari di planet Venus lebih lama dibanding satu tahunnya. Selain itu, matahari membakar miliaran ton bahan bakar tiap detik, dan di sana tidak ada suara sama sekali. Menakjubkan bukan?"
+      }
+    ];
+
+    let presetIdx = 0;
+    document.getElementById('loadPresetBtn').addEventListener('click', () => {
+      const p = presets[presetIdx % presets.length];
+      document.getElementById('title').value = p.title;
+      document.getElementById('script').value = p.script;
+      presetIdx++;
+    });
+
+    // Form submission
+    const form = document.getElementById('shortForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingStatusText = document.getElementById('loadingStatusText');
+    const progressBar = document.getElementById('progressBar');
+    const emptyPlaceholder = document.getElementById('emptyPlaceholder');
+    const videoPreview = document.getElementById('videoPreview');
+    const downloadSection = document.getElementById('downloadSection');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusBadge = document.getElementById('statusBadge');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      btnText.textContent = "MEMPROSES VIDEO...";
+      loadingOverlay.classList.remove('hidden');
+      statusBadge.textContent = "Generating...";
+      statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30";
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.detail || 'Gagal memulai job');
+
+        pollJob(data.job_id);
+      } catch (err) {
+        alert("Error: " + err.message);
+        submitBtn.disabled = false;
+        btnText.textContent = "GENERATE SHORTS SEKARANG";
+        loadingOverlay.classList.add('hidden');
+        statusBadge.textContent = "Gagal";
+      }
+    });
+
+    async function pollJob(jobId) {
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/status/${jobId}`);
+          const job = await res.json();
+
+          if (job.progress) {
+            progressBar.style.width = job.progress + '%';
+            loadingStatusText.textContent = "Status: " + job.status + " (" + job.progress + "%)";
+          }
+
+          if (job.status === 'completed') {
+            clearInterval(interval);
+            loadingOverlay.classList.add('hidden');
+            emptyPlaceholder.classList.add('hidden');
+            videoPreview.classList.remove('hidden');
+            videoPreview.src = job.video_url;
+            videoPreview.load();
+            videoPreview.play();
+
+            downloadSection.classList.remove('hidden');
+            downloadBtn.href = job.video_url;
+
+            submitBtn.disabled = false;
+            btnText.textContent = "GENERATE SHORTS SEKARANG";
+            statusBadge.textContent = "Selesai";
+            statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30";
+          } else if (job.status === 'failed') {
+            clearInterval(interval);
+            loadingOverlay.classList.add('hidden');
+            alert("Render error: " + (job.error || "Gagal membuat video"));
+            submitBtn.disabled = false;
+            btnText.textContent = "GENERATE SHORTS SEKARANG";
+            statusBadge.textContent = "Error";
+            statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30";
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }, 1500);
+    }
+  </script>
+</body>
+</html>
