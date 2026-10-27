@@ -7685,3 +7685,28 @@ async def saasshorts_voices(
         ],
         "source": "defaults",
     }
+
+# --- Mount TonShortGenerator Dashboard & Static Assets ---
+dashboard_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard", "dist")
+if os.path.exists(dashboard_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(dashboard_dist, "assets")), name="dist_assets")
+    if os.path.exists(os.path.join(dashboard_dist, "fonts")):
+        app.mount("/fonts", StaticFiles(directory=os.path.join(dashboard_dist, "fonts")), name="dist_fonts")
+
+    @app.get("/fonts.css")
+    async def _serve_fonts_css():
+        return FileResponse(os.path.join(dashboard_dist, "fonts.css"))
+
+    @app.get("/logo-openshorts.png")
+    async def _serve_logo():
+        return FileResponse(os.path.join(dashboard_dist, "logo-openshorts.png"))
+
+    @app.get("/vite.svg")
+    async def _serve_vite():
+        return FileResponse(os.path.join(dashboard_dist, "vite.svg"))
+
+    @app.get("/dashboard")
+    @app.get("/dashboard/")
+    @app.get("/")
+    async def _serve_dashboard_index():
+        return FileResponse(os.path.join(dashboard_dist, "index.html"))
