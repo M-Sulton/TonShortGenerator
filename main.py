@@ -10,7 +10,6 @@ from fastapi import FastAPI, Request, BackgroundTasks, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "output"
@@ -23,11 +22,11 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/output", StaticFiles(directory=str(OUTPUT_DIR)), name="output")
 
-# In-memory job tracker
 jobs = {}
+FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+FONT_REG = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 def sanitize_text(text: str) -> str:
-    # Escape characters for ffmpeg drawtext
     return text.replace("\\", "\\\\").replace("'", "\u2019").replace(":", "\\:").replace("%", "\\%")
 
 async def generate_voice(text: str, voice: str, out_path: str):
@@ -91,42 +90,34 @@ def render_short_video(job_id: str, title: str, script: str, voice: str, bg_them
         jobs[job_id]["status"] = "rendering_video"
         jobs[job_id]["progress"] = 65
         
-        # Color schemes inspired by YouTube Shorts Red theme
-        color1, color2 = "#0F0F0F", "#270808"
-        accent = "#FF0000"
+        color1 = "#0F0F0F"
         if bg_theme == "neon_red":
-            color1, color2 = "#140003", "#380009"
+            color1 = "#1a0205"
         elif bg_theme == "cyber_dark":
-            color1, color2 = "#0a0a0c", "#181824"
+            color1 = "#0a0a0c"
         elif bg_theme == "pure_black":
-            color1, color2 = "#000000", "#181818"
+            color1 = "#000000"
 
         clean_title = sanitize_text(title)
+        sub_style = "Fontname=DejaVu Sans,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,MarginV=300"
         
-        # Subtitle styling via FFmpeg subtitles filter
-        # Ass style: Alignment=2 (Bottom center), MarginV=280, Fontname=DejaVu Sans, Fontsize=24, Bold=1
-        sub_style = "Fontname=DejaVu Sans,FontSize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Bold=1,MarginV=280"
-        escaped_srt = srt_path.replace(":", "\\:").replace("\\", "/")
-
-        filter_complex = (
-            f"color=c={color1}:s=1080x1920:d={dur} [bg];"
-            f"drawbox=y=0:h=220:color=#FF0000@0.9:t=fill [header];"
-            f"[bg][header] overlay=0:0 [v1];"
-            f"[v1] drawtext=text='YOUTUBE SHORTS':fontcolor=white:fontsize=36:x=(w-text_w)/2:y=60:bold=1,"
-            f"drawtext=text='{clean_title}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=120:bold=1,"
-            f"drawbox=x=80:y=300:w=920:h=1200:color=white@0.05:t=fill,"
-            f"drawbox=x=76:y=296:w=928:h=1208:color=#FF0000@0.6:t=4,"
-            f"drawtext=text='TON SHORT GENERATOR':fontcolor=#FF4444:fontsize=28:x=(w-text_w)/2:y=340:bold=1,"
-            f"subtitles='{escaped_srt}':force_style='{sub_style}',"
-            f"drawtext=text='tonhermes.web.id':fontcolor=white@0.5:fontsize=24:x=(w-text_w)/2:y=1820 [vout]"
-        )
+        vf_filters = [
+            "drawbox=y=0:h=240:color=#FF0000@0.95:t=fill",
+            f"drawtext=fontfile='{FONT_BOLD}':text='YOUTUBE SHORTS':fontcolor=white:fontsize=32:x=(w-text_w)/2:y=65",
+            f"drawtext=fontfile='{FONT_BOLD}':text='{clean_title}':fontcolor=white:fontsize=46:x=(w-text_w)/2:y=130",
+            "drawbox=x=80:y=320:w=920:h=1180:color=white@0.05:t=fill",
+            "drawbox=x=76:y=316:w=928:h=1188:color=#FF0000@0.7:t=4",
+            f"drawtext=fontfile='{FONT_BOLD}':text='TON SHORT GENERATOR':fontcolor=#FF3333:fontsize=28:x=(w-text_w)/2:y=360",
+            f"subtitles={srt_path}:force_style='{sub_style}'",
+            f"drawtext=fontfile='{FONT_REG}':text='TonShortGenerator \\u2022 tonhermes.web.id':fontcolor=white@0.4:fontsize=22:x=(w-text_w)/2:y=1820"
+        ]
+        vf_string = ",".join(vf_filters)
 
         cmd = [
             "ffmpeg", "-y",
             "-f", "lavfi", "-i", f"color=c={color1}:s=1080x1920:d={dur}",
             "-i", audio_path,
-            "-filter_complex", filter_complex,
-            "-map", "[vout]", "-map", "1:a",
+            "-vf", vf_string,
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "faster", "-crf", "22",
             "-c:a", "aac", "-b:a", "192k",
             "-shortest",
@@ -148,7 +139,7 @@ def render_short_video(job_id: str, title: str, script: str, voice: str, bg_them
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 @app.post("/api/generate")
 async def start_generate(
@@ -167,7 +158,6 @@ async def start_generate(
         "title": title,
         "status": "queued",
         "progress": 5,
-        "created_at": "",
         "video_url": None,
         "error": None
     }
