@@ -370,7 +370,20 @@ function App() {
     try { return window.innerWidth >= 768; } catch { return true; }
   });
   const [processingMedia, setProcessingMedia] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, settings
+  const getInitialTab = () => {
+    try {
+      const h = window.location.hash || '';
+      const q = new URLSearchParams(window.location.search || (h.split('?')[1] || ''));
+      const t = q.get('tab') || h.replace('#', '').split('?')[0];
+      if (['dashboard', 'history', 'ugc-gallery', 'saasshorts', 'thumbnails', 'settings', 'drafts', 'gallery'].includes(t)) {
+        if (t === 'drafts') return 'history';
+        if (t === 'gallery') return 'ugc-gallery';
+        return t;
+      }
+    } catch (_) {}
+    return 'dashboard';
+  };
+  const [activeTab, setActiveTab] = useState(getInitialTab); // dashboard, settings
   // Mobile only: the full nav lives in a drawer behind the header's menu button.
   const [navOpen, setNavOpen] = useState(false);
   // Reopened-project state (paid mode): per-clip {index, server_file, active_layers}
@@ -675,6 +688,40 @@ function App() {
     }
   };
 
+  // URL Job Direct Loader
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      let targetJob = urlParams.get('job');
+      const hash = window.location.hash || '';
+      if (!targetJob && hash.startsWith('#job=')) {
+        targetJob = hash.split('?')[0].slice(5);
+      } else if (!targetJob && hash.length > 30 && !hash.includes('/')) {
+        targetJob = hash.replace('#', '').split('?')[0];
+      }
+      if (targetJob) {
+        fetch('/api/status/' + targetJob)
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data && data.status) {
+              setJobId(targetJob);
+              if (data.status === 'completed' || data.status === 'complete') {
+                setStatus('complete');
+                setResults(data.result || null);
+              } else if (data.status === 'failed' || data.status === 'error') {
+                setStatus('error');
+              } else {
+                setStatus('processing');
+              }
+              setProcessingMedia({ type: 'server', payload: '/api/source/' + targetJob });
+              setActiveTab('dashboard');
+            }
+          })
+          .catch(function(err) { console.error('Job load error:', err); });
+      }
+    } catch (e) {}
+  }, []);
+
   // Session Recovery: Restore on mount
   useEffect(() => {
     try {
@@ -933,7 +980,7 @@ function App() {
     }
   }, [billingEnabled, isSignedIn, tutorialPhase]);
 
-  const tutorialLock = tutorialPhase === 'intro' || tutorialPhase === 'coach' || tutorialPhase === 'celebrate';
+  const tutorialLock = false;
 
   // Sign-up survey (cloud/onboarding.py): before the tutorial intro, never
   // during the coach phase or the celebration. It may open while a job runs or
@@ -1265,7 +1312,7 @@ function App() {
     { id: 'ai-agent', ord: '04', icon: Bot, label: 'AI Agent', short: 'agent', byok: true },
     { id: 'ugc-gallery', ord: '05', icon: LayoutGrid, label: 'UGC Gallery', short: 'gallery', primary: true },
     { id: 'thumbnails', ord: '06', icon: Image, label: 'YouTube Studio', short: 'studio', primary: true },
-    ...(billingEnabled && isSignedIn ? [{ id: 'history', ord: '07', icon: History, label: 'History', short: 'history' }] : []),
+    { id: 'history', ord: '07', icon: History, label: 'Drafts', short: 'drafts', primary: true },
     { id: 'settings', ord: '08', icon: Settings, label: 'Settings', short: 'settings' },
   ];
   const activeNav = navItems.find((n) => n.id === activeTab);

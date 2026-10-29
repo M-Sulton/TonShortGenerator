@@ -3959,10 +3959,85 @@ _restore_locks: Dict[str, asyncio.Lock] = {}
 _JOB_ID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 
 
+
+@app.get("/api/history")
+async def history_local(request: Request):
+    target_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+    videos = []
+    if os.path.exists(target_dir):
+        for jid in sorted(os.listdir(target_dir), key=lambda x: os.path.getmtime(os.path.join(target_dir, x)) if os.path.exists(os.path.join(target_dir, x)) else 0, reverse=True):
+            p = os.path.join(target_dir, jid)
+            if not os.path.isdir(p) or jid == 'thumbnails':
+                continue
+            meta = glob.glob(os.path.join(p, '*_metadata.json'))
+            if not meta:
+                continue
+            try:
+                with open(meta[0], 'r', encoding='utf-8') as f:
+                    d = json.load(f)
+                clips = d.get('shorts') or d.get('clips') or []
+                created_iso = datetime.fromtimestamp(os.path.getmtime(p), timezone.utc).isoformat()
+                for idx, cl in enumerate(clips, start=1):
+                    title = cl.get('video_title_for_youtube_short') or cl.get('viral_hook_text') or f"Clip {idx}"
+                    sub_vids = glob.glob(os.path.join(p, f"subtitled_*_clip_{idx}.mp4")) or glob.glob(os.path.join(p, f"*_clip_{idx}.mp4"))
+                    filename = os.path.basename(sub_vids[0]) if sub_vids else f"clip_{idx}.mp4"
+                    view_url = f"/videos/{jid}/{filename}"
+                    videos.append({
+                        'id': f"{jid}_{idx}",
+                        'job_id': jid,
+                        'title': title,
+                        'view_url': view_url,
+                        'download_url': view_url,
+                        'created_at': created_iso
+                    })
+            except Exception:
+                pass
+    return {'videos': videos}
+
+@app.get("/api/projects")
+async def list_projects_local(request: Request):
+    projs = []
+    target_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+    if os.path.exists(target_dir):
+        for jid in sorted(os.listdir(target_dir), key=lambda x: os.path.getmtime(os.path.join(target_dir, x)) if os.path.exists(os.path.join(target_dir, x)) else 0, reverse=True):
+            p = os.path.join(target_dir, jid)
+            if not os.path.isdir(p) or jid == 'thumbnails':
+                continue
+            meta = glob.glob(os.path.join(p, '*_metadata.json'))
+            if not meta:
+                continue
+            try:
+                with open(meta[0], 'r', encoding='utf-8') as f:
+                    d = json.load(f)
+                clips = d.get('shorts') or d.get('clips') or []
+                first_title = clips[0].get('video_title_for_youtube_short') if clips else None
+                title = first_title or d.get('source_video') or f'Project {jid[:8]}'
+                projs.append({
+                    'job_id': jid,
+                    'title': title,
+                    'clip_count': len(clips),
+                    'created_at': datetime.fromtimestamp(os.path.getmtime(p), timezone.utc).isoformat(),
+                })
+            except Exception:
+                pass
+    return {'projects': projs}
+
+
 @app.post("/api/projects/{job_id}/restore")
 async def restore_project(job_id: str, request: Request):
     if not BILLING_ENABLED:
-        raise HTTPException(status_code=404, detail="Not found")
+        job = jobs.get(job_id)
+        if job is None:
+            job = _job_view_from_disk(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="Job not found")
+        return {
+            "job_id": job_id,
+            "status": "completed",
+            "result": job.get('result'),
+            "project_state": None,
+            "title": f"Project {job_id[:8]}",
+        }
     from sqlalchemy import select
     from cloud.auth import get_current_user_required
     from cloud.models import Project
@@ -7704,6 +7779,14 @@ if os.path.exists(dashboard_dist):
     @app.get("/vite.svg")
     async def _serve_vite():
         return FileResponse(os.path.join(dashboard_dist, "vite.svg"))
+
+    @app.api_route("/manifest.json", methods=["GET", "HEAD"])
+    async def _serve_manifest():
+        return FileResponse(os.path.join(dashboard_dist, "manifest.json"), media_type="application/manifest+json")
+
+    @app.api_route("/sw.js", methods=["GET", "HEAD"])
+    async def _serve_sw():
+        return FileResponse(os.path.join(dashboard_dist, "sw.js"), media_type="application/javascript")
 
     @app.get("/dashboard")
     @app.get("/dashboard/")
