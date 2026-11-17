@@ -8,4 +8,4 @@ export UPLOAD_POST_API_KEY="disabled"
 export DISABLE_YOUTUBE_URL=false
 
 cd /home/ubuntu/TonShortGenerator/upstream_openshorts
-exec /home/ubuntu/TonShortGenerator/venv/bin/uvicorn app:app --host 127.0.0.1 --port 3015
+exec /home/ubuntu/TonShortGenerator/venv/bin/uvicorn app:app --host 127.0.0.1 --port 3015 --timeout-keep-alive 300 --limit-concurrency 50

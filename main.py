@@ -125,6 +125,7 @@ def render_short_video(job_id: str, title: str, script: str, voice: str, bg_them
             "-vf", vf_string,
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "faster", "-crf", "22",
             "-c:a", "aac", "-b:a", "192k",
+            "-movflags", "+faststart",
             "-shortest",
             out_mp4
         ]
